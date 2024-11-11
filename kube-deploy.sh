@@ -1,0 +1,1 @@
+kubectl apply  -n default -f web-deployment.yaml,web-service.yaml   

@@ -9,8 +9,7 @@ metadata:
   name: shopping-ms
 spec:
   type: LoadBalancer
-  externalIPs:
-    - 192.168.1.253
+  clusterIP: 10.96.0.13
   ports:
     - name: "8060"
       port: 8060

@@ -1,0 +1,13 @@
+services:
+  web:
+    image: khanster/frontend:kube
+    restart: always
+    networks:
+      - shopping
+    ports:
+      - "8080:8080" 
+
+networks:
+  shopping:
+    external: true
+    name: shopping

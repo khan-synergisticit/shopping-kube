@@ -9,8 +9,8 @@ metadata:
   name: frontend
 spec:
   type: LoadBalancer
-  externalIPs:
-    - 192.168.1.253
+  clusterIP: 10.96.0.14
+  externalTrafficPolicy: Local
   ports:
     - protocol: TCP
       port: 8080

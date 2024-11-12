@@ -8,6 +8,9 @@ metadata:
     io.kompose.service: auth
   name: auth
 spec:
+  type: LoadBalancer
+  externalIPs:
+    - 192.168.1.253
   ports:
     - name: "8040"
       port: 8040

@@ -5,12 +5,15 @@ metadata:
     kompose.cmd: kompose convert
     kompose.version: 1.34.0 (cbf2835db)
   labels:
-    io.kompose.service: mysqldb
-  name: mysqldb
+    io.kompose.service: mysqldb-client
+  name: mysqldb-client
 spec:
   ports:
     - name: "3306"
       port: 3306
       targetPort: 3306
+    - name: 3306-tcp
+      port: 3306
+      targetPort: 3306
   selector:
-    io.kompose.service: mysqldb
+    io.kompose.service: mysqldb-client

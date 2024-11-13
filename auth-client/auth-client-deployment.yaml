@@ -27,7 +27,7 @@ spec:
             - name: SPRING_DATASOURCE_PASSWORD
               value: admin
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysqldb:3306/users
+              value: jdbc:mysql://mysqldb-client:3306/users
             - name: SPRING_DATASOURCE_USERNAME
               value: root
           image: khanster/auth-client:kube

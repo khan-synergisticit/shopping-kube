@@ -1,10 +1,13 @@
 #!/bin/bash
 
-cd /home/esel/Documents/synergisticit/devops/shopping/shopping-app/auth
+cd auth
 sh ./auth-deploy.sh
+cd ..
 
-cd /home/esel/Documents/synergisticit/devops/shopping/shopping-app/auth-client
+cd auth-client
 sh ./auth-client-deploy.sh
+cd ..
 
-cd /home/esel/Documents/synergisticit/devops/shopping/shopping-app/shopping-ms
+cd shopping-ms
 sh ./shopping-ms-deploy.sh
+cd ..

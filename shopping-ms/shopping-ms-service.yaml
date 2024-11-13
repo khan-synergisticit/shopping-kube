@@ -10,7 +10,8 @@ metadata:
 spec:
   type: LoadBalancer
   clusterIP: 10.96.0.13
-  externalIP: 10.96.0.13
+  externalIPs: 
+    - 10.96.0.13
   ports:
     - name: "8060"
       port: 8060

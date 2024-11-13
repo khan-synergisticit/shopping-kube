@@ -9,7 +9,7 @@ metadata:
   name: auth-client
 spec:
   type: LoadBalancer
-  clusterIP: 192.168.61.32
+  clusterIP: 10.96.0.12
   externalTrafficPolicy: Local
   ports:
     - name: "8090"

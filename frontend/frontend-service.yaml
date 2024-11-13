@@ -9,7 +9,7 @@ metadata:
   name: frontend
 spec:
   type: LoadBalancer
-  clusterIP: 192.168.61.34
+  clusterIP: 10.96.0.14
   externalTrafficPolicy: Local
   ports:
     - protocol: TCP

@@ -32,6 +32,133 @@ data:
       auth-cm0-configmap.yaml: |
         apiVersion: v1
         data:
+          auth-claim1-persistentvolumeclaim.yaml: |
+            apiVersion: v1
+            kind: PersistentVolumeClaim
+            metadata:
+              labels:
+                io.kompose.service: auth-claim1
+              name: auth-claim1
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 100Mi
+          auth-cm0-configmap.yaml: |
+            apiVersion: v1
+            data:
+              docker-compose.yml: |
+                services:
+                  mysqldb:
+                    image: "mysql:8.0"
+                    restart: always
+                    networks:
+                      - auth
+                    ports:
+                      - 3306:3306
+                    expose:
+                      - 3306
+                    environment:
+                      MYSQL_DATABASE: users
+                      MYSQL_ROOT_PASSWORD: admin
+                    volumes:
+                      - mysql-data:/var/lib/mysql
+                  auth:
+                    build:
+                      context: .
+                    ports:
+                      - "8040:8040"
+                    networks:
+                      - auth
+                    environment:
+                      - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/users
+                      - SPRING_DATASOURCE_USERNAME=root
+                      - SPRING_DATASOURCE_PASSWORD=admin
+                    depends_on:
+                      - mysqldb
+                    volumes:
+                      - .:/usr/app
+                      - ./.m2:/root/.m2
+                volumes:
+                  mysql-data:
+                networks:
+                  auth:
+                    name: auth
+                    external: true
+            kind: ConfigMap
+            metadata:
+              labels:
+                io.kompose.service: auth
+              name: auth-cm0
+          auth-deployment.yaml: |
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              annotations:
+                kompose.cmd: kompose convert
+                kompose.version: 1.34.0 (cbf2835db)
+              labels:
+                io.kompose.service: auth
+              name: auth
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  io.kompose.service: auth
+              strategy:
+                type: Recreate
+              template:
+                metadata:
+                  annotations:
+                    kompose.cmd: kompose convert
+                    kompose.version: 1.34.0 (cbf2835db)
+                  labels:
+                    io.kompose.service: auth
+                spec:
+                  containers:
+                    - env:
+                        - name: SPRING_DATASOURCE_PASSWORD
+                          value: admin
+                        - name: SPRING_DATASOURCE_URL
+                          value: jdbc:mysql://mysqldb:3306/users
+                        - name: SPRING_DATASOURCE_USERNAME
+                          value: root
+                      image: auth
+                      name: auth
+                      ports:
+                        - containerPort: 8040
+                          protocol: TCP
+                      volumeMounts:
+                        - mountPath: /usr/app
+                          name: auth-cm0
+                        - mountPath: /root/.m2
+                          name: auth-claim1
+                  restartPolicy: Always
+                  volumes:
+                    - configMap:
+                        name: auth-cm0
+                      name: auth-cm0
+                    - name: auth-claim1
+                      persistentVolumeClaim:
+                        claimName: auth-claim1
+          auth-service.yaml: |
+            apiVersion: v1
+            kind: Service
+            metadata:
+              annotations:
+                kompose.cmd: kompose convert
+                kompose.version: 1.34.0 (cbf2835db)
+              labels:
+                io.kompose.service: auth
+              name: auth
+            spec:
+              ports:
+                - name: "8040"
+                  port: 8040
+                  targetPort: 8040
+              selector:
+                io.kompose.service: auth
           docker-compose.yml: |
             services:
               mysqldb:
@@ -49,8 +176,7 @@ data:
                 volumes:
                   - mysql-data:/var/lib/mysql
               auth:
-                build:
-                  context: .
+                image: khanster/auth:kube
                 ports:
                   - "8040:8040"
                 networks:
@@ -70,11 +196,89 @@ data:
               auth:
                 name: auth
                 external: true
+          mysql-data-persistentvolumeclaim.yaml: |
+            apiVersion: v1
+            kind: PersistentVolumeClaim
+            metadata:
+              labels:
+                io.kompose.service: mysql-data
+              name: mysql-data
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 100Mi
+          mysqldb-deployment.yaml: |
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              annotations:
+                kompose.cmd: kompose convert
+                kompose.version: 1.34.0 (cbf2835db)
+              labels:
+                io.kompose.service: mysqldb
+              name: mysqldb
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  io.kompose.service: mysqldb
+              strategy:
+                type: Recreate
+              template:
+                metadata:
+                  annotations:
+                    kompose.cmd: kompose convert
+                    kompose.version: 1.34.0 (cbf2835db)
+                  labels:
+                    io.kompose.service: mysqldb
+                spec:
+                  containers:
+                    - env:
+                        - name: MYSQL_DATABASE
+                          value: users
+                        - name: MYSQL_ROOT_PASSWORD
+                          value: admin
+                      image: mysql:8.0
+                      name: mysqldb
+                      ports:
+                        - containerPort: 3306
+                          protocol: TCP
+                      volumeMounts:
+                        - mountPath: /var/lib/mysql
+                          name: mysql-data
+                  restartPolicy: Always
+                  volumes:
+                    - name: mysql-data
+                      persistentVolumeClaim:
+                        claimName: mysql-data
+          mysqldb-service.yaml: |
+            apiVersion: v1
+            kind: Service
+            metadata:
+              annotations:
+                kompose.cmd: kompose convert
+                kompose.version: 1.34.0 (cbf2835db)
+              labels:
+                io.kompose.service: mysqldb
+              name: mysqldb
+            spec:
+              ports:
+                - name: "3306"
+                  port: 3306
+                  targetPort: 3306
+                - name: 3306-tcp
+                  port: 3306
+                  targetPort: 3306
+              selector:
+                io.kompose.service: mysqldb
         kind: ConfigMap
         metadata:
           labels:
             io.kompose.service: auth
           name: auth-cm0
+      auth-deploy.sh: "# !/bin/bash\n\nkubectl apply  -n default -f auth-claim1-persistentvolumeclaim.yaml,auth-deployment.yaml,auth-service.yaml,mysql-data-persistentvolumeclaim.yaml,mysqldb-service.yaml,auth-cm0-configmap.yaml,auth-deploy.sh,mysqldb-deployment.yaml,pv-volume.yaml  "
       auth-deployment.yaml: |
         apiVersion: apps/v1
         kind: Deployment
@@ -108,7 +312,7 @@ data:
                       value: jdbc:mysql://mysqldb:3306/users
                     - name: SPRING_DATASOURCE_USERNAME
                       value: root
-                  image: auth
+                  image: khanster/auth:kube
                   name: auth
                   ports:
                     - containerPort: 8040
@@ -137,15 +341,17 @@ data:
             io.kompose.service: auth
           name: auth
         spec:
+          type: LoadBalancer
+          clusterIP:  10.96.0.11
           ports:
             - name: "8040"
               port: 8040
               targetPort: 8040
           selector:
             io.kompose.service: auth
-      docker-compose.yml: |
+      docker-compose.yml: |-
         services:
-          mysqldb:
+          mysqldb-auth:
             image: "mysql:8.0"
             restart: always
             networks:
@@ -160,26 +366,31 @@ data:
             volumes:
               - mysql-data:/var/lib/mysql
           auth:
-            image: khanster/auth:kube
+            build:
+              context: .
             ports:
               - "8040:8040"
             networks:
               - auth
             environment:
-              - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/users
+              - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb-auth:3306/users
               - SPRING_DATASOURCE_USERNAME=root
               - SPRING_DATASOURCE_PASSWORD=admin
             depends_on:
-              - mysqldb
+              - mysqldb-auth
             volumes:
               - .:/usr/app
               - ./.m2:/root/.m2
+
+
         volumes:
           mysql-data:
         networks:
           auth:
             name: auth
             external: true
+
+            #$ docker run --name mysqldb -e MYSQL_ROOT_PASSWORD=admin -v mysql-data:/var/lib/mysql -d mysql:8.0
       mysql-data-persistentvolumeclaim.yaml: |
         apiVersion: v1
         kind: PersistentVolumeClaim
@@ -252,17 +463,28 @@ data:
             - name: "3306"
               port: 3306
               targetPort: 3306
-            - name: 3306-tcp
-              port: 3306
-              targetPort: 3306
           selector:
             io.kompose.service: mysqldb
+      pv-volume.yaml: |
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: task-pv-volume
+          labels:
+            type: local
+        spec:
+          storageClassName: manual
+          capacity:
+            storage: 1Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: "/mnt/data"
     kind: ConfigMap
     metadata:
       labels:
         io.kompose.service: auth
       name: auth-cm0
-  auth-deploy.sh: "# !/bin/bash\n\nkubectl apply  -n default -f auth-claim1-persistentvolumeclaim.yaml,auth-deployment.yaml,auth-service.yaml,mysql-data-persistentvolumeclaim.yaml,mysqldb-service.yaml,auth-cm0-configmap.yaml,auth-deploy.sh,mysqldb-deployment.yaml,pv-volume.yaml  "
   auth-deployment.yaml: |
     apiVersion: apps/v1
     kind: Deployment
@@ -293,7 +515,7 @@ data:
                 - name: SPRING_DATASOURCE_PASSWORD
                   value: admin
                 - name: SPRING_DATASOURCE_URL
-                  value: jdbc:mysql://mysqldb:3306/users
+                  value: jdbc:mysql://mysqldb-auth:3306/users
                 - name: SPRING_DATASOURCE_USERNAME
                   value: root
               image: khanster/auth:kube
@@ -314,28 +536,10 @@ data:
             - name: auth-claim1
               persistentVolumeClaim:
                 claimName: auth-claim1
-  auth-service.yaml: |
-    apiVersion: v1
-    kind: Service
-    metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.34.0 (cbf2835db)
-      labels:
-        io.kompose.service: auth
-      name: auth
-    spec:
-      type: LoadBalancer
-      clusterIP:  10.96.0.11
-      ports:
-        - name: "8040"
-          port: 8040
-          targetPort: 8040
-      selector:
-        io.kompose.service: auth
+  auth-service.yaml: "apiVersion: v1\nkind: Service\nmetadata:\n  annotations:\n    kompose.cmd: kompose convert\n    kompose.version: 1.34.0 (cbf2835db)\n  labels:\n    io.kompose.service: auth\n  name: auth\nspec:\n  type: LoadBalancer\n  clusterIP:  10.96.0.11\n  externalIPs: \n    - 10.96.0.11\n  ports:\n    - name: \"8040\"\n      port: 8040\n      targetPort: 8040\n  selector:\n    io.kompose.service: auth\n"
   docker-compose.yml: |-
     services:
-      mysqldb-auth:
+      mysqldb:
         image: "mysql:8.0"
         restart: always
         networks:
@@ -350,18 +554,17 @@ data:
         volumes:
           - mysql-data:/var/lib/mysql
       auth:
-        build:
-          context: .
+        image: khanster/auth:kube
         ports:
           - "8040:8040"
         networks:
           - auth
         environment:
-          - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb-auth:3306/users
+          - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/users
           - SPRING_DATASOURCE_USERNAME=root
           - SPRING_DATASOURCE_PASSWORD=admin
         depends_on:
-          - mysqldb-auth
+          - mysqldb
         volumes:
           - .:/usr/app
           - ./.m2:/root/.m2
@@ -388,7 +591,7 @@ data:
       resources:
         requests:
           storage: 100Mi
-  mysqldb-deployment.yaml: |
+  mysqldb-auth-deployment.yaml: |
     apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -396,13 +599,13 @@ data:
         kompose.cmd: kompose convert
         kompose.version: 1.34.0 (cbf2835db)
       labels:
-        io.kompose.service: mysqldb
-      name: mysqldb
+        io.kompose.service: mysqldb-auth
+      name: mysqldb-auth
     spec:
       replicas: 1
       selector:
         matchLabels:
-          io.kompose.service: mysqldb
+          io.kompose.service: mysqldb-auth
       strategy:
         type: Recreate
       template:
@@ -411,7 +614,7 @@ data:
             kompose.cmd: kompose convert
             kompose.version: 1.34.0 (cbf2835db)
           labels:
-            io.kompose.service: mysqldb
+            io.kompose.service: mysqldb-auth
         spec:
           containers:
             - env:
@@ -420,7 +623,7 @@ data:
                 - name: MYSQL_ROOT_PASSWORD
                   value: admin
               image: mysql:8.0
-              name: mysqldb
+              name: mysqldb-auth
               ports:
                 - containerPort: 3306
                   protocol: TCP
@@ -432,7 +635,7 @@ data:
             - name: mysql-data
               persistentVolumeClaim:
                 claimName: mysql-data
-  mysqldb-service.yaml: |
+  mysqldb-auth-service.yaml: |
     apiVersion: v1
     kind: Service
     metadata:
@@ -440,15 +643,15 @@ data:
         kompose.cmd: kompose convert
         kompose.version: 1.34.0 (cbf2835db)
       labels:
-        io.kompose.service: mysqldb
-      name: mysqldb
+        io.kompose.service: mysqldb-auth
+      name: mysqldb-auth
     spec:
       ports:
         - name: "3306"
           port: 3306
           targetPort: 3306
       selector:
-        io.kompose.service: mysqldb
+        io.kompose.service: mysqldb-auth
   pv-volume.yaml: |
     apiVersion: v1
     kind: PersistentVolume

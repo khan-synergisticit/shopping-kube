@@ -1,5 +1,5 @@
 services:
-  mysqldb-client:
+  mysqldb:
     image: "mysql:8.0"
     restart: always
     networks:
@@ -20,11 +20,11 @@ services:
     networks:
       - auth
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb-client:3306/users
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/users
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=admin
     depends_on:
-      - mysqldb-client
+      - mysqldb
     volumes:
       - .:/usr/app
       - ./.m2:/root/.m2

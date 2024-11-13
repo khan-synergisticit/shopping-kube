@@ -8,10 +8,6 @@ metadata:
     io.kompose.service: auth-client
   name: auth-client
 spec:
-  type: LoadBalancer
-  clusterIP: 10.96.0.12
-  externalIPs: 
-    - 10.96.0.12
   ports:
     - name: "8090"
       port: 8090

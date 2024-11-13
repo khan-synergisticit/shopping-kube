@@ -14,8 +14,7 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
   auth:
-    build:
-      context: .
+    image: khanster/auth:kube
     ports:
       - "8040:8040"
     networks:

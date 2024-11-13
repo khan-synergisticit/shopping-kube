@@ -30,7 +30,7 @@ spec:
               value: jdbc:mysql://mysqldb-auth:3306/users
             - name: SPRING_DATASOURCE_USERNAME
               value: root
-          image: auth
+          image: khanster/auth:kube
           name: auth
           ports:
             - containerPort: 8040
